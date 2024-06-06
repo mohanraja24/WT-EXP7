@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Admission System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="email"], input[type="date"], select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        input[type="submit"], button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        input[type="submit"]:hover, button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Online Admission System</h1>
+    <form id="admissionForm">
+        <input type="text" id="name" placeholder="Student Name" required><br>
+        <input type="email" id="email" placeholder="Email" required><br>
+        <input type="date" id="dob" placeholder="Date of Birth" required><br>
+        <select id="course" required>
+            <option value="">Select Course</option>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Business Administration">Business Administration</option>
+            <option value="Mechanical Engineering">Mechanical Engineering</option>
+        </select><br>
+        <input type="submit" value="Submit Application">
+    </form>
+    <table id="admissionTable">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Email</th>
+                <th>Date of Birth</th>
+                <th>Course</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Admissions will be listed here dynamically -->
+        </tbody>
+    </table>
+
+    <script>
+        function fetchAdmissions() {
+            fetch('http://localhost:3000/api/admissions')
+            .then(response => response.json())
+            .then(data => {
+                const admissionTable = document.getElementById('admissionTable').getElementsByTagName('tbody')[0];
+                admissionTable.innerHTML = '';
+                data.forEach(admission => {
+                    const formattedDob = new Date(admission.dob).toLocaleDateString('en-GB');
+                    const row = admissionTable.insertRow();
+                    row.innerHTML = `
+                        <td>${admission.name}</td>
+                        <td>${admission.email}</td>
+                        <td>${formattedDob}</td>
+                        <td>${admission.course}</td>
+                        <td>${admission.status}</td>
+                        <td>
+                            <button onclick="editAdmission('${admission._id}', '${admission.name}', '${admission.email}', '${admission.dob}', '${admission.course}', '${admission.status}')">Edit</button>
+                            <button onclick="deleteAdmission('${admission._id}')">Delete</button>
+                        </td>
+                    `;
+                });
+            });
+        }
+
+        document.getElementById('admissionForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const dob = document.getElementById('dob').value;
+            const course = document.getElementById('course').value;
+            fetch('http://localhost:3000/api/admissions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, email, dob, course, status: 'Pending' })
+            })
+            .then(() => {
+                document.getElementById('name').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('dob').value = '';
+                document.getElementById('course').value = '';
+                fetchAdmissions();
+            });
+        });
+
+        function editAdmission(id, name, email, dob, course, status) {
+            const newName = prompt('Enter new name:', name);
+            const newEmail = prompt('Enter new email:', email);
+            const newDob = prompt('Enter new date of birth:', dob);
+            const newCourse = prompt('Enter new course:', course);
+            const newStatus = prompt('Enter new status:', status);
+            if (newName !== null && newEmail !== null && newDob !== null && newCourse !== null && newStatus !== null) {
+                fetch(`http://localhost:3000/api/admissions/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: newName, email: newEmail, dob: new Date(newDob).toISOString(), course: newCourse, status: newStatus })
+                })
+                .then(fetchAdmissions);
+            }
+        }
+
+        function deleteAdmission(id) {
+            if (confirm('Are you sure you want to delete this admission?')) {
+                fetch(`http://localhost:3000/api/admissions/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(fetchAdmissions);
+            }
+        }
+
+        fetchAdmissions();
+    </script>
+</body>
+</html>
